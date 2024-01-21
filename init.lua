@@ -267,14 +267,13 @@ require('lazy').setup({
   --    Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --
   --    For additional information see: https://github.com/folke/lazy.nvim#-structuring-your-plugins
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
 }, {})
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
 
 -- Display spaces as dots
-local space = "·"
 vim.o.listchars = 'space:·,trail:·,lead:·,tab:▏ ,nbsp:‿'
 vim.o.list = true
 
@@ -282,7 +281,17 @@ vim.o.list = true
 vim.opt.tabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.expandtab = true
-vim.bo.softtabstop = 4
+
+-- Tab == 2 spaces but only in Lua
+vim.api.nvim_create_augroup('setIndent', { clear = true })
+vim.api.nvim_create_autocmd('Filetype', {
+  group = 'setIndent',
+  pattern = { 'css', 'html', 'javascript',
+    'lua', 'markdown', 'md', 'typescript',
+    'scss', 'xml', 'xhtml', 'yaml'
+  },
+  command = 'setlocal shiftwidth=2 tabstop=2'
+})
 
 -- Set highlight on search
 vim.o.hlsearch = false
@@ -572,7 +581,6 @@ require('which-key').register({
 -- before setting up the servers.
 require('mason').setup()
 require('mason-lspconfig').setup()
-local lspUtil = require "lspconfig.util"
 
 -- Enable the following language servers
 --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
@@ -590,7 +598,6 @@ local servers = {
     filetypes = {
       "go", "gomod", "gowork", "gotmpl", "tmpl",
     },
-    root_dir = lspUtil.root_pattern("go.work", "go.mod", ".git"),
     gopls = {
       completeUnimported = true,
       usePlaceholders = true,
@@ -629,9 +636,8 @@ mason_lspconfig.setup_handlers {
     require('lspconfig')[server_name].setup {
       capabilities = capabilities,
       on_attach = on_attach,
-      cmd = servers[server_name].cmd,
+      cmd = (servers[server_name] or {}).cmd,
       filetypes = (servers[server_name] or {}).filetypes,
-      root_dir = servers[server_name].root_dir,
       settings = servers[server_name],
     }
   end,
